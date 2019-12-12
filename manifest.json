@@ -18,6 +18,7 @@
     },
     "permissions": [
       "storage",
-      "https://co2offset.atmosfair.de/api/*"
+      "https://co2offset.atmosfair.de/api/*",
+      "https://api.atmosfair.de/api/*"
     ]
   }
