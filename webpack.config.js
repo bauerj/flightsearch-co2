@@ -1,13 +1,22 @@
 const path = require('path')
 const webpack = require('webpack')
 
-try {
-  var secrets = require('./secrets.json')
+if (process.env.API_USER && process.env.API_PASSWORD) {
+  var secrets = {
+    password: process.env.API_PASSWORD,
+    username: process.env.API_USERNAME
+  }
 }
-catch (e) {
-  var secrets = require('./secrets.example.json')
-  console.log("WARNING: No API key defined in secrets.json. Using placeholder values.")
+else {
+  try {
+    var secrets = require('./secrets.json')
+  }
+  catch (e) {
+    var secrets = require('./secrets.example.json')
+    console.log("WARNING: No API key defined in secrets.json. Using placeholder values.")
+  }
 }
+
 
 module.exports = {
   entry: {
@@ -20,7 +29,7 @@ module.exports = {
   },
   plugins: [
     new webpack.DefinePlugin({
-      API_CONFIG: secrets
+      'API_CONFIG': JSON.stringify(secrets)
    }),
   ]
 };
