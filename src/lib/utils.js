@@ -1,70 +1,72 @@
-import axios from 'axios'
+import browser from 'webextension-polyfill'
 
-const cache = {}
-const requestsFor = {}
-
-function sleep(ms) {
+export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+const googleToAtmosfair = {
+    
+}
  
+export function sanitisePlaneName(name) {
+    // Some planes have different names for Google and Atmosfair. Let's change that.
+    if (googleToAtmosfair[name] !== undefined)
+        return googleToAtmosfair[name]
+    return name
+}
 
-export class AxiosThrottled {
-    constructor(cooldown) {
-        this.nextRequest = 0
-        this.cooldown = cooldown
-        this._axios = axios
-        this.get = this.getWrapper("get")
-        this.post = this.getWrapper("post")
-        this.delete = this.getWrapper("delete")
-        this.put = this.getWrapper("put")
-        this.patch = this.getWrapper("patch")
+function getExtensionVersion() {
+    return browser.runtime.getManifest().version
+}
+
+export class Cache {
+    constructor(maxAge) {
+        this.maxAge = maxAge
+        this.type = "?"
     }
 
-    getWrapper(method) {
-        return async function m() {
-            let cacheString = `${method}:${JSON.stringify(arguments)}`
-            return await this.cacheOrDefer(cacheString, async () => await axios[method].apply(this, arguments))
+    async get(key) {
+        key = this._getFullKey(key)
+
+        if (await this._isExpired(key)) {
+            console.log(`Cache for ${key} is expired (max_age=${this.maxAge})`)
+            return
         }
+
+        let result = await browser.storage.local.get(key)
+        if (result)
+            console.log(`Got result ${key} from cache.`, result)
+        return result[key]
     }
 
-    async cacheOrDefer(cacheString, getter) {
-        /*
-        Check if this request has already been made. If so, return previous
-        values once the response is there.
-
-        Otherwise, wait cooldown ms between each request in order not to overload the API
-        */
-        if (cache[cacheString]) {
-            console.log(`${cacheString} was in cache already`)
-            return cache[cacheString]
-        }
-
-        if (requestsFor[cacheString] === undefined) {
-            // This is the first request for cacheString, defer if necessary
-            requestsFor[cacheString] = []
-
-            let nextTS = this.nextRequest + this.cooldown
-            if (nextTS < +new Date())
-                nextTS = +new Date()
-            this.nextRequest = nextTS
-
-            let toSleep = Math.max(0, nextTS - new Date())
-            console.log(`Sleeping ${toSleep}ms before getting API access for requesting ${cacheString}`)
-            await sleep(toSleep)
-
-            let value = await getter()
-            cache[cacheString] = value
-            for (let resolve of requestsFor[cacheString]) {
-                resolve(value)
-            }
-            console.log(`Returned ${requestsFor[cacheString].length} times for ${cacheString}`)
-            value.data["_originalRequest"] = true
-            return value
-        }
-        else {
-            // This is already being requested. Just wait.
-            return await new Promise(promise => requestsFor[cacheString].push(promise))
-        }
+    async set(key, value) {
+        key = this._getFullKey(key)
+        console.log(`Saving value for ${key}=${value} in cache.`)
+        await browser.storage.local.set({[key]: value, [`${key}/created`]: + new Date()})
     }
 
+    async _isExpired(fullKey) {
+        let created = await browser.storage.local.get(`${fullKey}/created`)
+        let now = + new Date()
+        return now > created + this.maxAge * 1000
+    }
+
+    _getFullKey(key) {
+        key = key.replace("/", "_")
+        return `/${getExtensionVersion()}/${this.type}/${key}`
+    }
+}
+
+export class FlightCache extends Cache {
+    constructor() {
+        super(60*60*24*7 /* seconds = 1 week */)
+        this.type = "flight"
+    }
+}
+
+export class AirplaneCache extends Cache {
+    constructor() {
+        super(60*60*24*30 /* 1 month */)
+        this.type = "airplane"
+    }
 }

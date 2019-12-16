@@ -7,11 +7,16 @@ browser.runtime.onMessage.addListener(processRequest);
 
 async function processRequest(msg) {
     let airports = msg.airports, aircrafts = msg.aircrafts
-    let flights = []
+    let emissionData = []
 
     for (let position = 0; position + 1 < airports.length; position++) {
-        flights.push(new Flight(airports[position], airports[position+1], aircrafts[position]))
+        let from = airports[position]
+        let to = airports[position+1]
+        let aircraft = await api.getAircraftByName(aircrafts[position])
+        aircraft = aircraft ? aircraft.iataCode : null
+        
+        emissionData.push(api.getEmission(new Flight(from, to, aircraft)))
     }
     
-    return await api.getEmission(flights)
+    return await Promise.all(emissionData)
 }

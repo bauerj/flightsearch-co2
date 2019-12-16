@@ -30,9 +30,19 @@ async function processFlight(flight) {
             "aircrafts": aircrafts
         }
         
-        let emissionData = await browser.runtime.sendMessage(msg)
-        let co2t = ("" + (emissionData.co2).toFixed(0)).replace(".", ",")
-        newElement.querySelector("._co2-amount").innerHTML = `ca. <b>${co2t}kg</b> CO<sub>2</sub>`
+        let flightsWithEmissions = await browser.runtime.sendMessage(msg)
+
+        let co2 = 0
+
+        for (let f of flightsWithEmissions) {
+            if (f)
+                co2 += f.co2
+            else
+                return newElement.querySelector("._co2-amount").innerHTML = `X`
+        }
+
+        let co2Text = ("" + (co2).toFixed(0)).replace(".", ",")
+        newElement.querySelector("._co2-amount").innerHTML = `ca. <b>${co2Text}kg</b> CO<sub>2</sub>`
     }
    
 }
