@@ -24,6 +24,12 @@ async function processFlight(flight) {
             if (aircraft.innerHTML)
                 aircrafts.push(aircraft.innerHTML)
         }
+
+        console.log((airports.length === 0))
+        if (airports.length === 0) {
+            // This is a train ride.
+            return
+        }
     
         let msg = {
             "airports": airports,
