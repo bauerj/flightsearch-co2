@@ -4,9 +4,7 @@ export function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-const googleToAtmosfair = {
-    
-}
+const googleToAtmosfair = require("./planesGoogleToAtmosfair.json")
  
 export function sanitisePlaneName(name) {
     // Some planes have different names for Google and Atmosfair. Let's change that.

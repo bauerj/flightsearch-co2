@@ -90,7 +90,7 @@ export class AtmosfairAPI {
                 "flightCount": 1,
                 "departure": f.from,
                 "arrival": f.to,
-                "travelClass": "W",
+                "travelClass": "Y",
                 "charter": false,
                 "aircraftType": f.aircraftType ? f.aircraftType : null
             })
@@ -115,6 +115,7 @@ export class AtmosfairAPI {
             if (a.name == name)
                 return a
         }
-        console.log(`No aircraft found for ${name}`)
+        if (name)
+            console.log(`No aircraft found for ${name}`)
     }
 }
