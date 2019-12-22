@@ -5,7 +5,7 @@ async function processFlight(flight) {
         let beforeElement = flight.querySelector(".gws-flights-results__itinerary-price")
         let newElement = document.createElement('div')
         // Add CO2 row
-        newElement.innerHTML = '<div><div class="flt-subhead1Normal _co2-amount"></div></div>'
+        newElement.innerHTML = '<div data-animation-fadeout style><div class="flt-subhead1Normal _co2-amount"></div></div>'
     
         beforeElement.parentNode.insertBefore(newElement, beforeElement)
         
