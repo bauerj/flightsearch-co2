@@ -2,14 +2,15 @@ import {sleep, sanitisePlaneName, FlightCache, AirplaneCache} from './utils'
 import axios from 'axios'
 
 export class Flight {
-    constructor(from, to, aircraftType) {
+    constructor(from, to, aircraftType, travelClass) {
         this.from = from
         this.to = to
         this.aircraftType = aircraftType
+        this.travelClass = travelClass
     }
 
     toString() {
-        return `${this.from}->${this.to}(${this.aircraftType})`
+        return `${this.from}->${this.to}(${this.aircraftType}):${this.travelClass}`
     }
 }
 
@@ -28,7 +29,6 @@ export class AtmosfairAPI {
         if (await this.flightCache.get(flight.toString()))
             return await this.flightCache.get(flight.toString())
 
-
         if (this.flightsToRequest[flight.toString()] === undefined) {
             this.flightsToRequest[flight.toString()] = []
         }
@@ -38,6 +38,7 @@ export class AtmosfairAPI {
             console.log(`Queueing flight ${flight.toString()}`)
             return await new Promise(promise => this.flightsToRequest[flight.toString()].push({promise, flight}))
         }
+
 
         // Wait for more flights to appear, then request all at once
         this.requestWaiting = true
@@ -63,11 +64,13 @@ export class AtmosfairAPI {
         for (let f of emissions.flights) {
             if (!f || f.co2 === undefined || f.co2 == 0)
                 continue
-            let repr = new Flight(f.departure, f.arrival, f.aircraftType).toString()
+            let repr = new Flight(f.departure, f.arrival, f.aircraftType, f.travelClass).toString()
             this.flightCache.set(repr, f)
 
             if (flight.toString() == repr)
                 ourFlight = f
+            
+            console.log(flightsToRequest[repr], repr, flightsToRequest)
 
             for (let {promise, flight} of flightsToRequest[repr]) {
                 promise(f)
@@ -90,7 +93,7 @@ export class AtmosfairAPI {
                 "flightCount": 1,
                 "departure": f.from,
                 "arrival": f.to,
-                "travelClass": "Y",
+                "travelClass": f.travelClass,
                 "charter": false,
                 "aircraftType": f.aircraftType ? f.aircraftType : null
             })

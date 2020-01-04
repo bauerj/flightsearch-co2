@@ -1,5 +1,22 @@
 import browser from 'webextension-polyfill'
 
+function getTravelClass() {
+    let selectors = document.querySelectorAll(".gws-flights__seating_class_dropdown span")
+    let travelClassText = ""
+    for (let s of selectors) {
+        if (s.style[0] === undefined) {
+            travelClassText = s.innerText
+            break
+        }
+    }
+    return {
+        "Economy Class": "Y",
+        "Premium Economy": "W",
+        "Business Class": "B",
+        "First Class": "F"
+    }[travelClassText]
+}
+
 async function processFlight(flight) {
     if (!flight.querySelector("._co2-amount")) { // this is a result row
         let beforeElement = flight.querySelector(".gws-flights-results__itinerary-price")
@@ -25,7 +42,6 @@ async function processFlight(flight) {
                 aircrafts.push(aircraft.innerHTML)
         }
 
-        console.log((airports.length === 0))
         if (airports.length === 0) {
             // This is a train ride.
             return
@@ -33,13 +49,14 @@ async function processFlight(flight) {
     
         let msg = {
             "airports": airports,
-            "aircrafts": aircrafts
+            "aircrafts": aircrafts,
+            "travelClass": getTravelClass()
         }
         
         let flightsWithEmissions = await browser.runtime.sendMessage(msg)
 
         let co2 = 0
-
+        
         for (let f of flightsWithEmissions) {
             if (f)
                 co2 += f.co2
