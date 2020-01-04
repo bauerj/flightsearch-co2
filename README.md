@@ -7,9 +7,6 @@ Adds information about CO2 emissions to results on Google Flights.
 1. Clone repository
 1. Create `secrets.json` file with API credentials from Atmosfair.
 2. Run `yarn install --dev` to install dependencies
-3. Run `yarn webpack` to build the extension
-2. Open [chrome://extensions](chrome://extensions)
-3. Enable Developer Mode by clicking the toggle switch next to Developer mode.
-4. Click the LOAD UNPACKED button and select the downloaded directory.
+3. Run `yarn dev`. This will open a Firefox window with the plugin already loaded and hot-reload enabled.
 5. Open [flights.google.com](flights.google.com)
 6. Search for something

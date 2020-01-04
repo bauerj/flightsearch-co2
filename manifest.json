@@ -6,13 +6,12 @@
     "content_scripts": [
         {
           "matches": ["https://www.google.com/flights*"],
-          "css": ["src/style.css"],
-          "js": ["dist/content.js"]
+          "js": ["content.js"]
         }
     ],
     "background": {
       "scripts": [
-        "dist/background.js"
+        "background.js"
       ],
       "persistent": false
     },
