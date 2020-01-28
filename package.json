@@ -15,7 +15,7 @@
     "webextension-polyfill": "^0.4.0"
   },
   "scripts": {
-    "build": "webpack && cd dist && web-ext lint",
+    "build": "webpack && web-ext build -s dist -o",
     "dev": "webpack --env.debug=true -w"
   }
 }
