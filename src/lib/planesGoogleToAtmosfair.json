@@ -2,11 +2,11 @@
     "Airbus A320neo": "Airbus A320 neo",
     "Embraer RJ-190": "Embraer 190",
     "Airbus A321neo": "Airbus A321 neo",
-    "Airbus A330": "",
-    "Boeing 777": "",
-    "Boeing 737": "",
-    "Airbus A340": "",
-    "Airbus A350": "",
-    "Boeing 747": "",
+    "Airbus A330": "330",
+    "Boeing 777": "77W",
+    "Boeing 737": "738",
+    "Airbus A340": "343",
+    "Airbus A350": "Airbus A350-1000",
+    "Boeing 747": "744",
     "Airbus A380": "Airbus A380-800"
 }
