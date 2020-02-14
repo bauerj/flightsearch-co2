@@ -30,6 +30,7 @@ module.exports = (env, argv) => {
       filename: '[name].js',
       path: path.resolve(__dirname, 'dist')
     },
+    mode: 'production',
     plugins: [
       new webpack.DefinePlugin({
         'API_CONFIG': JSON.stringify(secrets)

@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
 import {AtmosfairAPI, Flight} from './lib/api.js'
+import {sanitisePlaneName} from "./lib/utils";
 
 let api = new AtmosfairAPI()
 
@@ -13,7 +14,7 @@ async function processRequest(msg) {
         let from = airports[position]
         let to = airports[position+1]
         let aircraft = await api.getAircraftByName(aircrafts[position])
-        aircraft = aircraft ? aircraft.iataCode : null
+        aircraft = aircraft ? aircraft.iataCode : sanitisePlaneName(aircrafts[position])
         
         emissionData.push(api.getEmission(new Flight(from, to, aircraft, travelClass)))
     }

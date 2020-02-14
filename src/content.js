@@ -1,4 +1,5 @@
 import browser from 'webextension-polyfill'
+import {sanitiseTravelClass} from "./lib/utils";
 
 function getTravelClass() {
     let selectors = document.querySelectorAll(".gws-flights__seating_class_dropdown span")
@@ -15,6 +16,27 @@ function getTravelClass() {
         "Business Class": "B",
         "First Class": "F"
     }[travelClassText]
+}
+
+function addFlightLinkText(flight, counter){
+    let cT
+    if ( counter<0 )
+        cT = "d="
+    else
+        cT = "v" + counter + "="
+
+    let linkPartText = ""
+    linkPartText += addFlightLinkPartText("&f_", cT, flight.departure)
+    linkPartText += addFlightLinkPartText("&f_c", cT, flight.travelClass)
+    linkPartText += addFlightLinkPartText("&f_m", cT, flight.aircraftType)
+    linkPartText += addFlightLinkPartText("&f_t", cT, "l")
+    return linkPartText
+}
+
+function addFlightLinkPartText(prefix, mid, suffix){
+    if (!suffix)
+        return ""
+    return prefix + mid + sanitiseTravelClass(suffix)
 }
 
 async function processFlight(flight) {
@@ -37,7 +59,7 @@ async function processFlight(flight) {
             _lastAirport = a
         }
     
-        for (let aircraft of flight.querySelectorAll(".gws-flights-results__aircraft-type span")) {
+        for (let aircraft of flight.querySelectorAll(".gws-flights-results__aircraft-type span:not(.gws-flights__separator)")) {
             if (aircraft.innerHTML)
                 aircrafts.push(aircraft.innerHTML)
         }
@@ -56,16 +78,23 @@ async function processFlight(flight) {
         let flightsWithEmissions = await browser.runtime.sendMessage(msg)
 
         let co2 = 0
-        
+
+        let linkText = "https://co2offset.atmosfair.de/co2offset?p=1000013619#/flight?f_r=o"
+        let counter = -1
+        let _lastFlight
         for (let f of flightsWithEmissions) {
-            if (f)
+            if (f) {
                 co2 += f.co2
+                linkText += addFlightLinkText(f, counter++)
+                _lastFlight = f
+            }
             else
                 return newElement.querySelector("._co2-amount").innerHTML = `X`
         }
+        linkText += "&f_a=" + _lastFlight.arrival
 
         let co2Text = ("" + (co2).toFixed(0)).replace(".", ",")
-        newElement.querySelector("._co2-amount").innerHTML = `ca. <b>${co2Text}kg</b> CO<sub>2</sub>`
+        newElement.querySelector("._co2-amount").innerHTML = `ca. <a href="${linkText}"><b>${co2Text}kg</b> CO<sub>2</sub></a>`
     }
    
 }

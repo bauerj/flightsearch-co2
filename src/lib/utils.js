@@ -13,6 +13,14 @@ export function sanitisePlaneName(name) {
     return name
 }
 
+const travelClassToAtmosfair = require("./travelClassToAtmosfairApi.json")
+
+export function sanitiseTravelClass(travelClass) {
+    if (travelClassToAtmosfair[travelClass] !== undefined)
+        return travelClassToAtmosfair[travelClass]
+    return travelClass
+}
+
 function getExtensionVersion() {
     return browser.runtime.getManifest().version
 }

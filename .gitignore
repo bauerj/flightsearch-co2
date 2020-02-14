@@ -27,3 +27,4 @@ test/fixtures/**/.fbkpm
 .vscode/
 /secrets.json
 /web-ext-artifacts/
+/my.webpack.config.js

@@ -1,6 +1,5 @@
 {
     "Airbus A300": "Ab3",
-
     "Airbus A310": "313",
     "Airbus A320neo": "Airbus A320 neo",
     "Airbus A330": "333",
@@ -17,11 +16,8 @@
     "Boeing 777": "77W",
     "Boeing 787": "788",
     "Embraer RJ-190": "E90",
-
-
     "Airbus A300-600": "Ab6",
     "Airbus A300B2/B4": "AB4",
-
     "Airbus A310-200": "312",
     "Airbus A310-300": "313",
     "Airbus A318": "318",
@@ -88,7 +84,7 @@
     "Boeing 777-200LR": "77L",
     "Boeing 777-300": "773",
     "Boeing 777-300ER": "77W",
-    "Boeing 787-10": "Boeing 787-10",
+    "Boeing 787-10": "788",
     "Boeing 787-8": "788",
     "Boeing 787-9": "Boeing 787-9",
     "Boeing BBJ": "Boeing BBJ",
