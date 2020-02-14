@@ -91,10 +91,11 @@ async function processFlight(flight) {
             else
                 return newElement.querySelector("._co2-amount").innerHTML = `X`
         }
-        linkText += "&f_a=" + _lastFlight.arrival
+        if (_lastFlight && _lastFlight.arrival)
+            linkText += "&f_a=" + _lastFlight.arrival
 
         let co2Text = ("" + (co2).toFixed(0)).replace(".", ",")
-        newElement.querySelector("._co2-amount").innerHTML = `ca. <a href="${linkText}"><b>${co2Text}kg</b> CO<sub>2</sub></a>`
+        newElement.querySelector("._co2-amount").innerHTML = `<div>ca. <b>${co2Text}kg</b> CO<sub>2</sub></div><div><a href="${linkText}" target="_blank"><small><small>jetzt kompensieren!</small></small></a></div>`
     }
    
 }
