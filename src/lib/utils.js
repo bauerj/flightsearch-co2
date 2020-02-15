@@ -7,6 +7,8 @@ export function sleep(ms) {
 const googleToAtmosfair = require("./planesGoogleToAtmosfair.json")
  
 export function sanitisePlaneName(name) {
+    if (name == undefined)
+        return null
     // Some planes have different names for Google and Atmosfair. Let's change that.
     if (googleToAtmosfair[name] !== undefined)
         return googleToAtmosfair[name]
