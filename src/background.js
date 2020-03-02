@@ -14,7 +14,7 @@ async function processRequest(msg) {
     for (let position = 0; position + 1 < airports.length; position++) {
         let from = airports[position]
         let to = airports[position+1]
-        let aircraft = await api.getAircraftByName(aircrafts[position])
+        let aircraft = aircrafts[position]
         let flightNumber = flightNumbers[position]
         let flightDate = flightDates[position]
         aircraft = aircraft ? aircraft.iataCode : sanitisePlaneName(aircrafts[position])

@@ -1,4 +1,4 @@
-import {sleep, sanitisePlaneName, FlightCache, AirplaneCache} from './utils'
+import {sleep, FlightCache} from './utils'
 import axios from 'axios'
 
 export class Flight {
@@ -23,7 +23,6 @@ export class AtmosfairAPI {
         this.flightsToRequest = {}
         this.requestWaiting = false
         this.flightCache = new FlightCache()
-        this.airplaneCache = new AirplaneCache()
         // aircraft type will be missing in response if flight number is set
         this.flightNumbersToAircrafts = {}
     }
@@ -136,24 +135,5 @@ export class AtmosfairAPI {
 
         let emission = (await axios.post(url, payload)).data
         return emission
-    }
-
-    async getAircraftByName(name) {
-        name = sanitisePlaneName(name)
-        let aircrafts = await this.airplaneCache.get("aircrafts")
-
-        if (!aircrafts || aircrafts.length == 0) {
-            console.log("Requesting aircrafts from web")
-            const url = this.WEB_BASE + "flight/aircraft"
-            aircrafts = (await axios.get(url)).data
-            await this.airplaneCache.set("aircrafts", aircrafts)
-        }
-        
-        for (let a of aircrafts) {
-            if (a.name == name)
-                return a
-        }
-        if (name)
-            console.log(`No aircraft found for ${name}`)
     }
 }

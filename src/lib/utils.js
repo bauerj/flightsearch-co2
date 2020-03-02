@@ -71,10 +71,3 @@ export class FlightCache extends Cache {
         this.type = "flight"
     }
 }
-
-export class AirplaneCache extends Cache {
-    constructor() {
-        super(60*60*24*30 /* 1 month */)
-        this.type = "airplane"
-    }
-}
