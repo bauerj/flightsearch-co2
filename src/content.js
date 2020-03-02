@@ -39,6 +39,15 @@ function addFlightLinkPartText(prefix, mid, suffix){
     return prefix + mid + sanitiseTravelClass(suffix)
 }
 
+function getFlightBaseDate() {
+    // Extract flight date from the URL
+    // The localised date on the website is harder to parse
+    let baseDates = window.location.hash.match(/([0-9]{4}-[0-9]{2}-[0-9]{2})/gm)
+    let legNumber = Math.max(document.querySelectorAll('ol[role=navigation] li').length - 1, 0)
+
+    return new Date(baseDates[legNumber])
+}
+
 async function processFlight(flight) {
     if (!flight.querySelector("._co2-amount")) { // this is a result row
         let beforeElement = flight.querySelector(".gws-flights-results__itinerary-price")
@@ -50,6 +59,8 @@ async function processFlight(flight) {
         
         let airports = []
         let aircrafts = []
+        let flightNumbers = []
+        let flightDates = []
     
         let _lastAirport = null
         for (let airport of flight.querySelectorAll(".gws-flights-results__iata-code")) {
@@ -59,9 +70,27 @@ async function processFlight(flight) {
             _lastAirport = a
         }
     
-        for (let aircraft of flight.querySelectorAll(".gws-flights-results__aircraft-type span:not(.gws-flights__separator)")) {
+        for (let aircraft of flight.querySelectorAll(".gws-flights-results__aircraft-type span")) {
             if (aircraft.innerHTML)
                 aircrafts.push(aircraft.innerHTML)
+        }
+
+        for (let flightNumber of flight.querySelectorAll(".gws-flights-results__other-leg-info span+span:not([class])")) {
+            flightNumber = flightNumber.parentNode;
+            if (flightNumber.innerText)
+                flightNumbers.push(flightNumber.innerText.replace(/[^A-Za-z0-9]/g, ""))
+        }
+
+        let baseDate = getFlightBaseDate() // this is the date of the _first_ flight
+
+        for (let flightDeparture of flight.querySelectorAll(".gws-flights-results__leg-departure")) {
+            // all other flights may be days later. Find out whether this is the case
+            let flightDate = new Date(baseDate)
+            let offset = flightDeparture.querySelector(".gws-flights__offset-days")
+            if (offset) {
+                flightDate.setDate(new Date().getDate() + Number(offset.innerHTML))
+            }
+            flightDates.push(flightDate)
         }
 
         if (airports.length === 0) {
@@ -72,16 +101,20 @@ async function processFlight(flight) {
         let msg = {
             "airports": airports,
             "aircrafts": aircrafts,
-            "travelClass": getTravelClass()
+            "travelClass": getTravelClass(),
+            "flightNumbers": flightNumbers,
+            "flightDates": flightDates
         }
+
+        console.log(msg)
         
         let flightsWithEmissions = await browser.runtime.sendMessage(msg)
 
         let co2 = 0
-
         let linkText = "https://co2offset.atmosfair.de/co2offset?p=1000013619#/flight?f_r=o"
         let counter = -1
         let _lastFlight
+        
         for (let f of flightsWithEmissions) {
             if (f) {
                 co2 += f.co2
@@ -91,6 +124,7 @@ async function processFlight(flight) {
             else
                 return newElement.querySelector("._co2-amount").innerHTML = `X`
         }
+
         if (_lastFlight && _lastFlight.arrival)
             linkText += "&f_a=" + _lastFlight.arrival
 

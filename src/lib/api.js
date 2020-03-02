@@ -2,15 +2,17 @@ import {sleep, sanitisePlaneName, FlightCache, AirplaneCache} from './utils'
 import axios from 'axios'
 
 export class Flight {
-    constructor(from, to, aircraftType, travelClass) {
+    constructor(from, to, aircraftType, flightNumber, flightDate, travelClass) {
         this.from = from
         this.to = to
         this.aircraftType = aircraftType
         this.travelClass = travelClass
+        this.flightDate = flightDate
+        this.flightNumber = flightNumber === undefined ? null : flightNumber
     }
 
     toString() {
-        return `${this.from}->${this.to}(${this.aircraftType}):${this.travelClass}`
+        return `${this.flightNumber}:${this.from}->${this.to}(${this.aircraftType}):${this.travelClass}`
     }
 }
 
@@ -22,12 +24,16 @@ export class AtmosfairAPI {
         this.requestWaiting = false
         this.flightCache = new FlightCache()
         this.airplaneCache = new AirplaneCache()
+        // aircraft type will be missing in response if flight number is set
+        this.flightNumbersToAircrafts = {}
     }
     
 
     async getEmission(flight) {
         if (await this.flightCache.get(flight.toString()))
             return await this.flightCache.get(flight.toString())
+
+        this.flightNumbersToAircrafts[flight.flightNumber] = flight.aircraftType
 
         if (this.flightsToRequest[flight.toString()] === undefined) {
             this.flightsToRequest[flight.toString()] = []
@@ -62,19 +68,41 @@ export class AtmosfairAPI {
         let ourFlight = undefined // For this instance
 
         for (let f of emissions.flights) {
-            if (!f || f.co2 === undefined || f.co2 == 0)
-                continue
-            let repr = new Flight(f.departure, f.arrival, f.aircraftType, f.travelClass).toString()
-            this.flightCache.set(repr, f)
+            let aircraftType = f.aircraftType
+
+            if (!aircraftType)
+                aircraftType = this.flightNumbersToAircrafts[f.flightNumber]
+
+            let repr = new Flight(f.departure, f.arrival, aircraftType, f.flightNumber, f.departureDate, f.travelClass).toString()
 
             if (flight.toString() == repr)
                 ourFlight = f
-            
-            console.log(flightsToRequest[repr], repr, flightsToRequest)
+
+            if (!f || !f.co2) {
+                if (f.flightNumber) {
+                    // Maybe it works if we request it without a flight number 🤔
+                    console.log(`Retrying without flight number ${f.flightNumber}`)
+                    let newRequest = this.getEmission(new Flight(f.departure, f.arrival, this.flightNumbersToAircrafts[f.flightNumber], null, null, f.travelClass))
+                    
+                    for (let {promise, flight} of flightsToRequest[repr]) {
+                        newRequest.then(promise)
+                    }
+                }
+                continue
+            }
+                
+            this.flightCache.set(repr, f)
+
+            if (flightsToRequest[repr] === undefined)
+                console.log("alarm", flightsToRequest[repr], repr, flightsToRequest, this.flightNumbersToAircrafts)
 
             for (let {promise, flight} of flightsToRequest[repr]) {
                 promise(f)
             }
+        }
+
+        if (flight.flightNumber && (!ourFlight || !ourFlight.co2)) {
+            return await this.getEmission(new Flight(ourFlight.departure, ourFlight.arrival, this.flightNumbersToAircrafts[flight.flightNumber], null, null, flight.travelClass))
         }
         return ourFlight
     }
@@ -88,7 +116,7 @@ export class AtmosfairAPI {
         }
         
         for (let f of flights) {
-            payload["flights"].push({
+            let flightData = {
                 "passengerCount": 1,
                 "flightCount": 1,
                 "departure": f.from,
@@ -96,7 +124,14 @@ export class AtmosfairAPI {
                 "travelClass": f.travelClass,
                 "charter": false,
                 "aircraftType": f.aircraftType ? f.aircraftType : null
-            })
+            }
+
+            if (f.flightNumber && f.flightDate) {
+                flightData["departureDate"] = f.flightDate.toISOString().slice(0, 10);
+                flightData["flightNumber"] = f.flightNumber
+            }
+
+            payload["flights"].push(flightData)
         }
 
         let emission = (await axios.post(url, payload)).data
