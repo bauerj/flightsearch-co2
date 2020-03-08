@@ -1,6 +1,12 @@
+![Extension Icon](./src/flightsearch-co2.svg)
+<img src="./src/flightsearch-co2.svg">
+
 # Google Flights CO2 extension
 
 Adds information about CO2 emissions to results on Google Flights.
+
+![Screenshot](./media/screenshot.png)
+<img src=".//media/screenshot.png">
 
 ## Quick Start
 

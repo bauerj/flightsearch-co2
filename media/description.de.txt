@@ -1,0 +1,6 @@
+Reise nachhaltiger und entscheide dich für den Flug mit dem geringsten CO₂-Ausstoß.
+
+Diese Erweiterung bindet Informationen zum CO₂-Ausstoß jedes Flugs direkt in die Google™ Flugsuche ein. Informationen über jeden Flug werden automatisch in den CO₂-Rechner von atmosfair eingegeben und direkt in die Ergebnisliste integriert. 
+Damit kann man auf einen Blick erkennen, welcher Flug am wenigsten CO₂ ausstößt.
+
+atmosfair gGmbH ist eine gemeinnützige Klimaschutzorganisation mit Sitz in Berlin. Sie entwickelt und betreibt Klimaschutzprojekte durch den Ausbau von Erneuerbarer Energie und Energieeffizienztechnologien und bietet umweltbewussten Menschen die Möglichkeit, unvermeidbare CO2-Emissionen im globalen Süden zu kompensieren.
