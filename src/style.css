@@ -1,0 +1,8 @@
+._co2-link {
+    opacity: 0;
+    transition: opacity 300ms ease-out;
+}
+
+li:hover ._co2-link {
+    opacity: 1;
+}

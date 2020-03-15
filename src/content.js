@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
-import {sanitiseTravelClass} from "./lib/utils";
+import {sanitiseTravelClass} from "./lib/utils"
+import styleDefinition from "./style.css"
 
 function getUserLanguage() {
     if (window.location.search.indexOf("hl=en") > 0)
@@ -175,3 +176,10 @@ const observer = new MutationObserver(function(mutationRecord) {
 observer.observe(document.body, { attributes: false, childList: true, subtree: true })
 
 setInterval(() => processNode(document), 1000)
+
+// add CSS
+let style = document.createElement('style')
+style.type = 'text/css'
+style.innerHTML = styleDefinition
+document.getElementsByTagName('head')[0].appendChild(style)
+console.log(style)

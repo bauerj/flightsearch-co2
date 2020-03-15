@@ -22,6 +22,14 @@ else {
 
 module.exports = (env, argv) => {
   let config = {
+    module: {
+      rules: [
+        {
+          test: /\.css$/i,
+          use: 'raw-loader',
+        },
+      ],
+    },
     entry: {
       'content': './src/content.js',
       'background': './src/background.js'
