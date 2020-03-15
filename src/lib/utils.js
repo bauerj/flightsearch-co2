@@ -43,13 +43,13 @@ export class Cache {
 
         let result = await browser.storage.local.get(key)
         if (result)
-            console.log(`Got result ${key} from cache.`, result)
+            console.debug(`Got result ${key} from cache.`, result)
         return result[key]
     }
 
     async set(key, value) {
         key = this._getFullKey(key)
-        console.log(`Saving value for ${key}=${value} in cache.`)
+        console.debug(`Saving value for ${key}=${value} in cache.`)
         await browser.storage.local.set({[key]: value, [`${key}/created`]: + new Date()})
     }
 

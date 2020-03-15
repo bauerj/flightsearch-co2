@@ -6,3 +6,8 @@
 li:hover ._co2-link {
     opacity: 1;
 }
+
+._co2-info {
+    padding-bottom: 2em;
+    margin-top: -1em;
+}

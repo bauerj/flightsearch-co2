@@ -1,6 +1,7 @@
 import browser from 'webextension-polyfill'
 import {sanitiseTravelClass} from "./lib/utils"
 import styleDefinition from "./style.css"
+import {translate, setLanguage} from "./lib/i18n"
 
 function getUserLanguage() {
     if (window.location.search.indexOf("hl=en") > 0)
@@ -10,7 +11,7 @@ function getUserLanguage() {
     return navigator.language;
 }
 
-function getTravelClass() {
+function getTravelClassText() {
     let selectors = document.querySelectorAll(".gws-flights__seating_class_dropdown span")
     let travelClassText = ""
     for (let s of selectors) {
@@ -19,6 +20,10 @@ function getTravelClass() {
             break
         }
     }
+    return travelClassText
+}
+
+function getTravelClass(travelClassText) {
     if (getUserLanguage() == "de")
         return {
             "Economy Class": "Y",
@@ -33,6 +38,7 @@ function getTravelClass() {
             "Business": "B",
             "First Class": "F"
         }[travelClassText]
+
     return "Y" // Todo: Warnung anzeigen
 }
 
@@ -66,71 +72,56 @@ function getFlightBaseDate() {
     return new Date(baseDates[legNumber])
 }
 
-async function processFlight(flight) {
-    if (!flight.querySelector("._co2-amount")) { // this is a result row
-        let beforeElement = flight.querySelector(".gws-flights-results__itinerary-price")
-        let newElement = document.createElement('div')
-        // Add CO2 row
-        newElement.innerHTML = '<div data-animation-fadeout style><div class="flt-subhead1Normal _co2-amount"></div></div>'
-    
-        beforeElement.parentNode.insertBefore(newElement, beforeElement)
-        
-        let airports = []
-        let aircrafts = []
-        let flightNumbers = []
-        let flightDates = []
-    
-        let _lastAirport = null
-        for (let airport of flight.querySelectorAll(".gws-flights-results__iata-code")) {
-            let a = airport.innerHTML
-            if (a != _lastAirport)
-                airports.push(a)
-            _lastAirport = a
-        }
-    
-        for (let aircraft of flight.querySelectorAll(".gws-flights-results__aircraft-type span")) {
-            if (aircraft.innerHTML)
-                aircrafts.push(aircraft.innerHTML)
-        }
+async function getAirports(element) {
+    let airports = []
+    let _lastAirport = null
+    for (let airport of element.querySelectorAll(".gws-flights-results__iata-code")) {
+        let a = airport.innerHTML
+        if (a != _lastAirport)
+            airports.push(a)
+        _lastAirport = a
+    }
+    return airports
+}
 
-        for (let flightNumber of flight.querySelectorAll(".gws-flights-results__other-leg-info span+span:not([class])")) {
-            flightNumber = flightNumber.parentNode;
-            if (flightNumber.innerText)
-                flightNumbers.push(flightNumber.innerText.replace(/[^A-Za-z0-9]/g, ""))
+function getAircrafts(element) {
+    let aircrafts = []
+    for (let aircraft of element.querySelectorAll(".gws-flights-results__aircraft-type span")) {
+        if (aircraft.innerHTML)
+            aircrafts.push(aircraft.innerHTML)
+    }
+    return aircrafts
+}
+
+async function getFlightNumbers(element) {
+    let flightNumbers = []
+    for (let flightNumber of element.querySelectorAll(".gws-flights-results__other-leg-info span+span:not([class])")) {
+        flightNumber = flightNumber.parentNode;
+        if (flightNumber.innerText)
+            flightNumbers.push(flightNumber.innerText.replace(/[^A-Za-z0-9]/g, ""))
+    }
+    return flightNumbers
+}
+
+async function getFlightDates(element) {
+    let flightDates = []
+    let baseDate = getFlightBaseDate() // this is the date of the _first_ flight
+
+    for (let flightDeparture of element.querySelectorAll(".gws-flights-results__leg-departure")) {
+        // all other flights may be days later. Find out whether this is the case
+        let flightDate = new Date(baseDate)
+        let offset = flightDeparture.querySelector(".gws-flights__offset-days")
+        if (offset) {
+            flightDate.setDate(new Date().getDate() + Number(offset.innerHTML))
         }
+        flightDates.push(flightDate)
+    }
+    return flightDates
+}
 
-        let baseDate = getFlightBaseDate() // this is the date of the _first_ flight
-
-        for (let flightDeparture of flight.querySelectorAll(".gws-flights-results__leg-departure")) {
-            // all other flights may be days later. Find out whether this is the case
-            let flightDate = new Date(baseDate)
-            let offset = flightDeparture.querySelector(".gws-flights__offset-days")
-            if (offset) {
-                flightDate.setDate(new Date().getDate() + Number(offset.innerHTML))
-            }
-            flightDates.push(flightDate)
-        }
-
-        if (airports.length === 0) {
-            // This is a train ride.
-            return
-        }
-    
-        let msg = {
-            "airports": airports,
-            "aircrafts": aircrafts,
-            "travelClass": getTravelClass(),
-            "flightNumbers": flightNumbers,
-            "flightDates": flightDates
-        }
-
-        console.log(msg)
-        
-        let flightsWithEmissions = await browser.runtime.sendMessage(msg)
-
-        let co2 = 0
+async function getCo2Info(flightsWithEmissions) {
+    let co2 = 0
         let linkTarget = "https://co2offset.atmosfair.de/co2offset?p=1000013619#/flight?f_r=o"
-        let linkText = getUserLanguage() == "de" ? "Jetzt kompensieren" : "Compensate now"
         let counter = -1
         let _lastFlight
         
@@ -148,9 +139,81 @@ async function processFlight(flight) {
         linkTarget += "&f_a=" + _lastFlight.arrival
 
         let co2Text = ("" + (co2).toFixed(0)).replace(".", ",")
-        newElement.querySelector("._co2-amount").innerHTML = `<div>ca. <b>${co2Text}kg</b> CO<sub>2</sub></div><div><a class="_co2-link" href="${linkTarget}" target="_blank"><small><small>${linkText}!</small></small></a></div>`
+        return {
+            "co2Text": co2Text,
+            "linkTarget": linkTarget
+        }
+}
+
+async function processFlight(flight) {
+    if (!flight.querySelector("._co2-amount")) { // this is a result row
+        let beforeElement = flight.querySelector(".gws-flights-results__itinerary-price")
+        let newElement = document.createElement('div')
+        // Add CO2 row
+        newElement.innerHTML = '<div data-animation-fadeout style><div class="flt-subhead1Normal _co2-amount"></div></div>'
+    
+        beforeElement.parentNode.insertBefore(newElement, beforeElement)
+
+        let airports = await getAirports(flight)
+        
+        if (airports.length === 0) {
+            // This is a train ride.
+            return
+        }
+    
+        let msg = {
+            "airports": airports,
+            "aircrafts": getAircrafts(flight),
+            "travelClass": getTravelClass(getTravelClassText()),
+            "flightNumbers": await getFlightNumbers(flight),
+            "flightDates": await getFlightDates(flight)
+        }
+        
+        let flightsWithEmissions = await browser.runtime.sendMessage(msg)
+
+        let co2info = await getCo2Info(flightsWithEmissions)
+        newElement.querySelector("._co2-amount").innerHTML = `<div>ca. <b>${co2info["co2Text"]}kg</b> CO<sub>2</sub></div><div><a class="_co2-link" href="${co2info["linkTarget"]}" target="_blank"><small><small>${translate("Compensate now")}!</small></small></a></div>`
     }
-   
+}
+
+async function processSummary(summary) {
+    let beforeElement = summary.querySelectorAll(".gws-flights-book__booking-options-heading")[1]
+    let newElement = document.createElement('div')
+    newElement.className = "_co2-info"
+    let heading = document.createElement("h2")
+    heading.className = "flt-headline6"
+    heading.innerText = translate("CO₂ Information")
+    let description = document.createElement("div")
+    description.className = "flt-body2"
+    newElement.appendChild(heading)
+    newElement.appendChild(description)
+
+    beforeElement.parentNode.insertBefore(newElement, beforeElement)
+    
+    let airports = await getAirports(summary)
+
+    if (airports.length === 0) {
+        // This is a train ride.
+        description.innerText = translate("For train journeys, the CO₂ output cannot be calculated yet.")
+        return
+    }
+
+    console.log(airports)
+
+    let travelClassText = summary.querySelector(".gws-flights-results__seating-class").innerText
+
+    let msg = {
+        "airports": airports,
+        "aircrafts": getAircrafts(summary),
+        "travelClass": getTravelClass(travelClassText),
+        "flightNumbers": await getFlightNumbers(summary),
+        "flightDates": await getFlightDates(summary)
+    }
+    
+    let flightsWithEmissions = await browser.runtime.sendMessage(msg)
+
+    let co2info = await getCo2Info(flightsWithEmissions)
+    description.innerHTML = translate('For this journey, about {co2Text}kg CO₂ are released per passenger. <a href="{linkTarget}">Compensate now!</a>', co2info)
 }
 
 function processNode(node) {
@@ -159,6 +222,10 @@ function processNode(node) {
         if (!f.querySelector("._co2-price"))
             processFlight(f)
     }
+    let summaryNode = node.querySelector ? node.querySelector(".gws-flights-book__trip-summary") : []
+    if (!summaryNode.querySelector("._co2-info"))
+        processSummary(summaryNode)
+    
 }
 
 //chrome.tabs.onUpdated.addListener(processFlights)
@@ -182,4 +249,5 @@ let style = document.createElement('style')
 style.type = 'text/css'
 style.innerHTML = styleDefinition
 document.getElementsByTagName('head')[0].appendChild(style)
-console.log(style)
+
+setLanguage(getUserLanguage())

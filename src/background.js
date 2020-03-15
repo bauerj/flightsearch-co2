@@ -17,7 +17,7 @@ async function processRequest(msg) {
         let aircraft = aircrafts[position]
         let flightNumber = flightNumbers[position]
         let flightDate = flightDates[position]
-        aircraft = aircraft ? aircraft.iataCode : sanitisePlaneName(aircrafts[position])
+        aircraft = aircraft && aircraft.iataCode ? aircraft.iataCode : sanitisePlaneName(aircrafts[position])
         
         emissionData.push(api.getEmission(new Flight(from, to, aircraft, flightNumber, flightDate, travelClass)))
     }

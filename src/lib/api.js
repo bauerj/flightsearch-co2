@@ -40,7 +40,7 @@ export class AtmosfairAPI {
 
         // A request will be sent in a bit. Let's just queue this flight for that request.
         if (this.requestWaiting) {
-            console.log(`Queueing flight ${flight.toString()}`)
+            console.debug(`Queueing flight ${flight.toString()}`)
             return await new Promise(promise => this.flightsToRequest[flight.toString()].push({promise, flight}))
         }
 
@@ -49,7 +49,7 @@ export class AtmosfairAPI {
         this.requestWaiting = true
         this.flightsToRequest[flight.toString()].push({promise: () => {}, flight})
         
-        console.log(`Defering load for ${flight.toString()}`)
+        console.debug(`Defering load for ${flight.toString()}`)
         await sleep(100)
 
         this.requestWaiting = false
@@ -61,7 +61,7 @@ export class AtmosfairAPI {
         let emissions = await this._getEmissionForFlights(allFlights.reverse())
 
         if (emissions.status != "SUCCESS") {
-            console.log(`ERROR: Atmosfair API request failed while getting ${allFlights.length} flights.`, emissions.errors)
+            console.error(`Atmosfair API request failed while getting ${allFlights.length} flights.`, emissions.errors)
         }
 
         let ourFlight = undefined // For this instance
@@ -80,7 +80,7 @@ export class AtmosfairAPI {
             if (!f || !f.co2) {
                 if (f.flightNumber) {
                     // Maybe it works if we request it without a flight number 🤔
-                    console.log(`Retrying without flight number ${f.flightNumber}`)
+                    console.debug(`Retrying without flight number ${f.flightNumber}`)
                     let newRequest = this.getEmission(new Flight(f.departure, f.arrival, this.flightNumbersToAircrafts[f.flightNumber], null, null, f.travelClass))
                     
                     for (let {promise, flight} of flightsToRequest[repr]) {
@@ -91,9 +91,6 @@ export class AtmosfairAPI {
             }
                 
             this.flightCache.set(repr, f)
-
-            if (flightsToRequest[repr] === undefined)
-                console.log("alarm", flightsToRequest[repr], repr, flightsToRequest, this.flightNumbersToAircrafts)
 
             for (let {promise, flight} of flightsToRequest[repr]) {
                 promise(f)
