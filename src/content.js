@@ -1,6 +1,14 @@
 import browser from 'webextension-polyfill'
 import {sanitiseTravelClass} from "./lib/utils";
 
+function getUserLanguage() {
+    if (window.location.search.indexOf("hl=en") > 0)
+        return "en";
+    if (window.location.search.indexOf("hl=de") > 0)
+        return "de";
+    return navigator.language;
+}
+
 function getTravelClass() {
     let selectors = document.querySelectorAll(".gws-flights__seating_class_dropdown span")
     let travelClassText = ""
@@ -10,12 +18,21 @@ function getTravelClass() {
             break
         }
     }
-    return {
-        "Economy Class": "Y",
-        "Premium Economy": "W",
-        "Business Class": "B",
-        "First Class": "F"
-    }[travelClassText]
+    if (getUserLanguage() == "de")
+        return {
+            "Economy Class": "Y",
+            "Premium Economy": "W",
+            "Business Class": "B",
+            "First Class": "F"
+        }[travelClassText]
+    if (getUserLanguage() == "en")
+        return {
+            "Economy": "Y",
+            "Premium Economy": "W",
+            "Business": "B",
+            "First Class": "F"
+        }[travelClassText]
+    return "Y" // Todo: Warnung anzeigen
 }
 
 function addFlightLinkText(flight, counter){
@@ -111,14 +128,15 @@ async function processFlight(flight) {
         let flightsWithEmissions = await browser.runtime.sendMessage(msg)
 
         let co2 = 0
-        let linkText = "https://co2offset.atmosfair.de/co2offset?p=1000013619#/flight?f_r=o"
+        let linkTarget = "https://co2offset.atmosfair.de/co2offset?p=1000013619#/flight?f_r=o"
+        let linkText = getUserLanguage() == "de" ? "Jetzt kompensieren" : "Compensate now"
         let counter = -1
         let _lastFlight
         
         for (let f of flightsWithEmissions) {
             if (f) {
                 co2 += f.co2
-                linkText += addFlightLinkText(f, counter++)
+                linkTarget += addFlightLinkText(f, counter++)
                 _lastFlight = f
             }
             else
@@ -126,10 +144,10 @@ async function processFlight(flight) {
         }
 
         if (_lastFlight && _lastFlight.arrival)
-            linkText += "&f_a=" + _lastFlight.arrival
+        linkTarget += "&f_a=" + _lastFlight.arrival
 
         let co2Text = ("" + (co2).toFixed(0)).replace(".", ",")
-        newElement.querySelector("._co2-amount").innerHTML = `<div>ca. <b>${co2Text}kg</b> CO<sub>2</sub></div><div><a href="${linkText}" target="_blank"><small><small>jetzt kompensieren!</small></small></a></div>`
+        newElement.querySelector("._co2-amount").innerHTML = `<div>ca. <b>${co2Text}kg</b> CO<sub>2</sub></div><div><a class="_co2-link" href="${linkTarget}" target="_blank"><small><small>${linkText}!</small></small></a></div>`
     }
    
 }
